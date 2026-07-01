@@ -94,6 +94,31 @@ public final class ClaimShape {
     @FunctionalInterface
     public interface ColumnTest { boolean test(int x, int z); }
 
+    /**
+     * The outline of the region as a flat array of grid-aligned unit edges — every side of a claimed
+     * column whose neighbour is outside the claim — as {@code [x1,z1,x2,z2, x1,z1,z2,z2, ...]} in world
+     * grid coordinates. Used to draw the claim boundary client-side.
+     */
+    public int[] boundaryFlat() {
+        java.util.List<int[]> segs = new java.util.ArrayList<>();
+        for (int z = 0; z < depth; z++) {
+            for (int x = 0; x < width; x++) {
+                if (!cells.get(x + z * width)) continue;
+                int gx = minX + x, gz = minZ + z;
+                if (!contains(gx, gz - 1)) segs.add(new int[]{gx, gz, gx + 1, gz});         // north
+                if (!contains(gx, gz + 1)) segs.add(new int[]{gx, gz + 1, gx + 1, gz + 1}); // south
+                if (!contains(gx - 1, gz)) segs.add(new int[]{gx, gz, gx, gz + 1});         // west
+                if (!contains(gx + 1, gz)) segs.add(new int[]{gx + 1, gz, gx + 1, gz + 1}); // east
+            }
+        }
+        int[] flat = new int[segs.size() * 4];
+        for (int i = 0; i < segs.size(); i++) {
+            int[] s = segs.get(i);
+            flat[i * 4] = s[0]; flat[i * 4 + 1] = s[1]; flat[i * 4 + 2] = s[2]; flat[i * 4 + 3] = s[3];
+        }
+        return flat;
+    }
+
     /** Re-allocate the bitset onto a larger bounding box, preserving set columns. */
     private void reframe(int nMinX, int nMinZ, int nMaxX, int nMaxZ) {
         int nWidth = nMaxX - nMinX + 1, nDepth = nMaxZ - nMinZ + 1;

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+- **Claim outlines.** Claim boundaries are traced with particles for nearby players, server-side, so
+  it works on any client without a client mod. (A client-rendered glowing outline was attempted first
+  but deferred — Minecraft 26.2's reworked render pipeline makes it impractical to build without live
+  iteration; the particle outline is a reliable stand-in.)
+
 ## 0.2.0
 - **Phase 1 core.** Claim land with a golden shovel (right-click two corners to add a rectangle,
   sneak + right-click to carve to any shape); claims are protected from block break/place and

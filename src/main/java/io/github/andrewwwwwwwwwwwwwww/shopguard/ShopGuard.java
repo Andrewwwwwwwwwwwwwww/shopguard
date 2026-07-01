@@ -32,6 +32,7 @@ public class ShopGuard implements ModInitializer {
 
         ClaimTool.register();       // registered first so shovel clicks are consumed before protection
         ProtectionHandler.register();
+        ClaimVisualizer.register();
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 ShopGuardCommands.register(dispatcher));
