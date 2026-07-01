@@ -22,10 +22,13 @@ public class ShopGuard implements ModInitializer {
 
     public static MinecraftServer server;
     public static final ClaimStore STORE = new ClaimStore();
+    public static Config CONFIG = new Config();
 
     @Override
     public void onInitialize() {
         LOGGER.info("ShopGuard initializing");
+
+        CONFIG = Config.load();
 
         ClaimTool.register();       // registered first so shovel clicks are consumed before protection
         ProtectionHandler.register();

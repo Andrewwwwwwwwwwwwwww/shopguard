@@ -73,11 +73,11 @@ public final class ClaimTool {
         long excludeId = editing != null ? editing.id : -1L;
         if (ShopGuard.STORE.overlapsOther(dim, sim, excludeId)) { error(sp, "That overlaps another player's claim."); return; }
         if (!ShopGuard.STORE.allowedByZones(dim, sim)) { error(sp, "Claims can only be made inside a claim zone here."); return; }
-        if (sim.count() > Config.maxClaimArea) { error(sp, "Too big — max " + Config.maxClaimArea + " blocks per claim."); return; }
+        if (sim.count() > ShopGuard.CONFIG.maxClaimArea) { error(sp, "Too big — max " + ShopGuard.CONFIG.maxClaimArea + " blocks per claim."); return; }
         int ownerTotal = ShopGuard.STORE.totalCellsOfOwner(uid)
                 - (editing != null ? editing.shape.count() : 0) + sim.count();
-        if (!op && ownerTotal > Config.maxTotalPerPlayer) {
-            error(sp, "That would exceed your total claim limit (" + Config.maxTotalPerPlayer + " blocks).");
+        if (!op && ownerTotal > ShopGuard.CONFIG.maxTotalPerPlayer) {
+            error(sp, "That would exceed your total claim limit (" + ShopGuard.CONFIG.maxTotalPerPlayer + " blocks).");
             return;
         }
 
