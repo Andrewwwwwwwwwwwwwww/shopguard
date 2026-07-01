@@ -6,6 +6,7 @@
   "description": "Land-claim grief protection. Claim a region with a golden shovel and shape it to fit your build (rectangle, then carve). Owners are protected from block break/place and container theft; visitors can still walk through and trade at shops inside a claim. Admins can restrict where claims are allowed.",
   "authors": ["Andrewwwwwwwwwwwwwww"],
   "license": "All Rights Reserved",
+  "icon": "assets/shopguard/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": ["io.github.andrewwwwwwwwwwwwwww.shopguard.ShopGuard"]
