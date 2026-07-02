@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0
+- **Phase 3 grief protection.**
+  - **Explosions can't destroy claimed blocks** — TNT, creepers, ghasts, end crystals, wither blasts,
+    beds/respawn anchors. The blast still hurts mobs and breaks unclaimed blocks nearby; it just can't
+    chew into a claim (this also stops a creeper's block griefing).
+  - **Fire can't consume claimed blocks** — it can flicker up to a claim's edge but not eat into it.
+  - (Pistons already couldn't push/pull across a claim border, since 0.5.0.)
+- Known minor gaps left for a later pass: endermen stealing blocks, and fluid (lava/water) flowing
+  across a claim border.
+
 ## 0.7.2
 - **Fixed a single right-click instantly creating a one-block claim.** One physical click can reach
   the server as two interaction packets (block-use + item-use); the second was being read as the

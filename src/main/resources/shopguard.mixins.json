@@ -4,6 +4,8 @@
   "package": "io.github.andrewwwwwwwwwwwwwww.shopguard.mixin",
   "compatibilityLevel": "JAVA_25",
   "mixins": [
+    "ExplosionProtectionMixin",
+    "FireSpreadMixin",
     "PistonStructureResolverMixin"
   ],
   "injectors": {
