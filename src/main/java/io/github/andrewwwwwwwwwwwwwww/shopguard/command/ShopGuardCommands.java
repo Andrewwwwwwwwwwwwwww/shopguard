@@ -161,8 +161,8 @@ public final class ShopGuardCommands {
         ServerPlayer sp = player(s);
         if (sp == null) return notPlayer(s);
         AdminZone z = ShopGuard.STORE.addZone(dim(sp), c1.getX(), c1.getZ(), c2.getX(), c2.getZ());
-        s.sendSuccess(() -> Component.literal("Added claim zone #" + z.id + " ("
-                + z.minX + "," + z.minZ + " to " + z.maxX + "," + z.maxZ + ").")
+        ClaimVisualizer.refresh(sp.level());
+        s.sendSuccess(() -> Component.literal("Zone #" + z.id + " set — " + z.shape.count() + " blocks.")
                 .withStyle(ChatFormatting.GREEN), false);
         return 1;
     }
@@ -176,8 +176,9 @@ public final class ShopGuardCommands {
         }
         s.sendSuccess(() -> Component.literal("Claim zones (" + zones.size() + "):").withStyle(ChatFormatting.AQUA), false);
         for (AdminZone z : zones) {
-            s.sendSuccess(() -> Component.literal(" • #" + z.id + " — " + z.minX + "," + z.minZ
-                    + " to " + z.maxX + "," + z.maxZ + " (" + z.dimension + ")").withStyle(ChatFormatting.GRAY), false);
+            s.sendSuccess(() -> Component.literal(" • #" + z.id + " — " + z.shape.count() + " blocks near "
+                    + z.shape.minX() + ", " + z.shape.minZ() + " (" + z.dimension + ")")
+                    .withStyle(ChatFormatting.GRAY), false);
         }
         return 1;
     }

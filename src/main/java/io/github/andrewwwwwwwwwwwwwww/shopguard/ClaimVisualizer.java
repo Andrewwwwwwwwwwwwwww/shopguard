@@ -99,39 +99,53 @@ public final class ClaimVisualizer {
         }
     }
 
-    /** Outline admin zones (dark-red dust) for players who toggled `/claim zones` on. */
+    /**
+     * Outline admin zones (dark-red dust) for players who toggled `/claim zones` on, and for ops
+     * holding the golden hoe (so the district is visible while placing/adjusting it — the admin
+     * counterpart of the shovel showing claim outlines).
+     */
     private static void drawZones(ServerLevel level, String dim) {
         List<ServerPlayer> viewers = new ArrayList<>();
-        for (ServerPlayer p : level.players()) if (ZONE_VIEWERS.contains(p.getUUID())) viewers.add(p);
+        for (ServerPlayer p : level.players())
+            if (ZONE_VIEWERS.contains(p.getUUID()) || holdingZoneTool(p)) viewers.add(p);
         if (viewers.isEmpty()) return;
 
-        for (AdminZone z : ShopGuard.STORE.zones()) {
-            if (!z.dimension.equals(dim)) continue;
+        // Zones are shapes (add + carve); touching zones read as one border — an edge is only drawn
+        // where the neighbouring column isn't covered by any zone in the dimension.
+        List<AdminZone> dimZones = new ArrayList<>();
+        for (AdminZone z : ShopGuard.STORE.zones()) if (z.dimension.equals(dim)) dimZones.add(z);
+        if (dimZones.isEmpty()) return;
+        ClaimShape.ColumnTest zoneCovers = (x, zz) -> {
+            for (AdminZone z : dimZones) if (z.shape.contains(x, zz)) return true;
+            return false;
+        };
+
+        for (AdminZone z : dimZones) {
+            if (z.shape.isEmpty()) continue;
+            int[] segs = z.shape.boundaryFlat(zoneCovers);
             for (ServerPlayer p : viewers) {
                 double px = p.getX(), pz = p.getZ(), py = p.getY() + 0.15;
-                if (z.maxX + 1 < px - RANGE || z.minX > px + RANGE
-                        || z.maxZ + 1 < pz - RANGE || z.minZ > pz + RANGE) continue;
-                // Trace the zone's rectangle border at 1-block steps (borders sit on the outer grid edges).
-                for (int x = z.minX; x <= z.maxX + 1; x++) {
-                    spawnZoneDot(level, p, px, pz, py, x, z.minZ);
-                    spawnZoneDot(level, p, px, pz, py, x, z.maxZ + 1);
-                }
-                for (int zz = z.minZ; zz <= z.maxZ + 1; zz++) {
-                    spawnZoneDot(level, p, px, pz, py, z.minX, zz);
-                    spawnZoneDot(level, p, px, pz, py, z.maxX + 1, zz);
+                if (z.shape.maxX() < px - RANGE || z.shape.minX() > px + RANGE
+                        || z.shape.maxZ() < pz - RANGE || z.shape.minZ() > pz + RANGE) continue;
+                for (int i = 0; i + 3 < segs.length; i += 4) {
+                    double mx = (segs[i] + segs[i + 2]) / 2.0;
+                    double mz = (segs[i + 1] + segs[i + 3]) / 2.0;
+                    if (Math.abs(mx - px) > RANGE || Math.abs(mz - pz) > RANGE) continue;
+                    level.sendParticles(p, ZONE_DUST, true, true, mx, py, mz, 1, 0.0, 0.0, 0.0, 0.0);
                 }
             }
         }
     }
 
-    private static void spawnZoneDot(ServerLevel level, ServerPlayer p,
-                                     double px, double pz, double py, double x, double z) {
-        if (Math.abs(x - px) > RANGE || Math.abs(z - pz) > RANGE) return;
-        level.sendParticles(p, ZONE_DUST, true, true, x, py, z, 1, 0.0, 0.0, 0.0, 0.0);
-    }
-
     private static boolean holdingTool(ServerPlayer p) {
         return p.getMainHandItem().getItem() == Items.GOLDEN_SHOVEL
                 || p.getOffhandItem().getItem() == Items.GOLDEN_SHOVEL;
+    }
+
+    /** Ops holding the admin zone tool see zone borders automatically (players use `/claim zones`). */
+    private static boolean holdingZoneTool(ServerPlayer p) {
+        return (p.getMainHandItem().getItem() == Items.GOLDEN_HOE
+                || p.getOffhandItem().getItem() == Items.GOLDEN_HOE)
+                && ProtectionHandler.isOp(p);
     }
 }

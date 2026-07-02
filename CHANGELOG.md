@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.7.0
+- **The admin zone tool (golden hoe) now works exactly like the claim shovel, but for zones.**
+  Right-click two corners to **add** area; right-click the **sky** to toggle ADD ↔ CARVE mode and
+  carve pieces back out — zones can now be any shape, not just rectangles. Touching zones merge into
+  one; carving a zone to nothing deletes it.
+- **Zone borders show automatically while an op holds the hoe** (the admin counterpart of the shovel
+  showing claim outlines). `/claim zones` remains the way players see where they may build.
+- Existing rectangular zones from older versions load unchanged.
+
 ## 0.6.3
 - **Fixed the shovel toggling mode when aiming at distant blocks.** Vanilla treats any right-click past
   ~4.5 blocks as an "air click"; the tool now raycasts your view up to 64 blocks — a block in your

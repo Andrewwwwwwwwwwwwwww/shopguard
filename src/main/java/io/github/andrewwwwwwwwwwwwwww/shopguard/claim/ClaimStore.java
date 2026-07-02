@@ -84,12 +84,49 @@ public final class ClaimStore {
         return shape.allColumnsMatch((x, z) -> inAnyZone(dim, x, z));
     }
 
+    /** Add a rectangle to the zone set; any touching zones (and the rect) merge into one zone. */
     public AdminZone addZone(String dim, int x1, int z1, int x2, int z2) {
-        AdminZone z = new AdminZone(nextId++, dim, x1, z1, x2, z2);
-        zones.put(z.id, z);
+        ClaimShape merged = new ClaimShape();
+        merged.addRect(x1, z1, x2, z2);
+        List<AdminZone> absorb = new ArrayList<>();
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (AdminZone z : zones.values()) {
+                if (!z.dimension.equals(dim) || absorb.contains(z)) continue;
+                if (merged.touches(z.shape)) {
+                    merged.union(z.shape);
+                    absorb.add(z);
+                    changed = true;
+                }
+            }
+        }
+        AdminZone result;
+        if (!absorb.isEmpty()) {
+            result = absorb.get(0);
+            for (int i = 1; i < absorb.size(); i++) zones.remove(absorb.get(i).id);
+        } else {
+            result = new AdminZone(nextId++, dim);
+            zones.put(result.id, result);
+        }
+        result.shape = merged;
         save();
-        return z;
+        return result;
     }
+
+    /** Carve a rectangle out of the zone containing (x1,z1). Null if that spot isn't zoned;
+     *  the zone is deleted if carved to nothing. */
+    public AdminZone carveZone(String dim, int x1, int z1, int x2, int z2) {
+        AdminZone target = null;
+        for (AdminZone z : zones.values())
+            if (z.dimension.equals(dim) && z.contains(x1, z1)) { target = z; break; }
+        if (target == null) return null;
+        target.shape.removeRect(x1, z1, x2, z2);
+        if (target.shape.isEmpty()) zones.remove(target.id);
+        save();
+        return target;
+    }
+
     public boolean removeZone(long id) { boolean r = zones.remove(id) != null; if (r) save(); return r; }
     public Collection<AdminZone> zones() { return zones.values(); }
 

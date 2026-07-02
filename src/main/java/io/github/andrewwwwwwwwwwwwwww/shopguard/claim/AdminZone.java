@@ -2,36 +2,43 @@ package io.github.andrewwwwwwwwwwwwwww.shopguard.claim;
 
 import net.minecraft.nbt.CompoundTag;
 
-/** A moderator-defined rectangular region (full height) within which players are allowed to claim. */
+/**
+ * A moderator-defined region (full height) within which players are allowed to claim. Shaped exactly
+ * like a claim: a rectilinear {@link ClaimShape}, so admins can add rectangles and carve pieces out
+ * with the zone tool. Touching zones merge into one.
+ */
 public final class AdminZone {
     public final long id;
     public String dimension;
-    public int minX, minZ, maxX, maxZ;
+    public ClaimShape shape;
 
-    public AdminZone(long id, String dimension, int x1, int z1, int x2, int z2) {
+    public AdminZone(long id, String dimension) {
         this.id = id;
         this.dimension = dimension;
-        this.minX = Math.min(x1, x2);
-        this.minZ = Math.min(z1, z2);
-        this.maxX = Math.max(x1, x2);
-        this.maxZ = Math.max(z1, z2);
+        this.shape = new ClaimShape();
     }
 
     public boolean contains(int x, int z) {
-        return x >= minX && x <= maxX && z >= minZ && z <= maxZ;
+        return shape.contains(x, z);
     }
 
     public CompoundTag save() {
         CompoundTag t = new CompoundTag();
         t.putLong("Id", id);
         t.putString("Dim", dimension);
-        t.putInt("MinX", minX); t.putInt("MinZ", minZ);
-        t.putInt("MaxX", maxX); t.putInt("MaxZ", maxZ);
+        t.put("Shape", shape.save());
         return t;
     }
 
     public static AdminZone load(CompoundTag t) {
-        return new AdminZone(t.getLongOr("Id", 0), t.getStringOr("Dim", "minecraft:overworld"),
-                t.getIntOr("MinX", 0), t.getIntOr("MinZ", 0), t.getIntOr("MaxX", 0), t.getIntOr("MaxZ", 0));
+        AdminZone z = new AdminZone(t.getLongOr("Id", 0), t.getStringOr("Dim", "minecraft:overworld"));
+        if (t.contains("Shape")) {
+            z.shape = ClaimShape.load(t.getCompoundOrEmpty("Shape"));
+        } else {
+            // Legacy rectangle format (pre-0.7): MinX/MinZ/MaxX/MaxZ.
+            z.shape.addRect(t.getIntOr("MinX", 0), t.getIntOr("MinZ", 0),
+                    t.getIntOr("MaxX", 0), t.getIntOr("MaxZ", 0));
+        }
+        return z;
     }
 }
