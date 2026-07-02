@@ -56,7 +56,8 @@ public final class ClaimTool {
         boolean carve = !CARVE_MODE.getOrDefault(uid, false);
         CARVE_MODE.put(uid, carve);
         PENDING.remove(uid);
-        sp.sendSystemMessage(Component.literal("Shovel mode: " + (carve ? "CARVE (remove area)" : "CLAIM (add area)"))
+        // Overlay (action bar above the hotbar) — fades on its own instead of filling chat.
+        sp.sendOverlayMessage(Component.literal("Shovel mode: " + (carve ? "CARVE (remove area)" : "CLAIM (add area)"))
                 .withStyle(carve ? ChatFormatting.GOLD : ChatFormatting.GREEN));
     }
 
@@ -66,7 +67,7 @@ public final class ClaimTool {
         BlockPos first = PENDING.remove(uid);
         if (first == null) {
             PENDING.put(uid, pos.immutable());
-            sp.sendSystemMessage(Component.literal(
+            sp.sendOverlayMessage(Component.literal(
                     (carve ? "Carve" : "Claim") + ": first corner set — right-click the opposite corner.")
                     .withStyle(ChatFormatting.YELLOW));
             return;

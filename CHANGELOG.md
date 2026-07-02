@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.1
+- The shovel **mode toggle** and **"first corner set"** prompts now show above the hotbar (action bar,
+  fades after a moment) instead of filling chat. Results (created/updated/carved/removed) and errors
+  stay in chat.
+
 ## 0.5.0
 - **Touching claims merge into one.** Adding a rectangle that touches any of your own claims fuses them
   into a single claim — extending no longer piles up separate claims, and removing one removes the whole

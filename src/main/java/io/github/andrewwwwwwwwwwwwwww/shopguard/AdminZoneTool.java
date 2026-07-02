@@ -38,7 +38,7 @@ public final class AdminZoneTool {
         BlockPos first = PENDING.remove(uid);
         if (first == null) {
             PENDING.put(uid, pos.immutable());
-            sp.sendSystemMessage(Component.literal("Zone: first corner set — right-click the opposite corner.")
+            sp.sendOverlayMessage(Component.literal("Zone: first corner set — right-click the opposite corner.")
                     .withStyle(ChatFormatting.YELLOW));
             return;
         }
