@@ -5,6 +5,7 @@ import io.github.andrewwwwwwwwwwwwwww.shopguard.command.ShopGuardCommands;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.MinecraftServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,6 +38,10 @@ public class ShopGuard implements ModInitializer {
 
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 ShopGuardCommands.register(dispatcher));
+
+        // Zone-border visibility is a session toggle; reset it when the player leaves.
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, srv) ->
+                ClaimVisualizer.clearZoneViewer(handler.player.getUUID()));
 
         ServerLifecycleEvents.SERVER_STARTED.register(srv -> {
             server = srv;

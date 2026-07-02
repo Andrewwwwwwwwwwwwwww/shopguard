@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0
+- **`/claim zones`** (any player): toggle admin-zone borders on/off — white end-rod particles trace the
+  build-area perimeter so players can see exactly where they're allowed to claim, no tool needed.
+  Turns itself off on logout. (Zone borders look distinct from the green claim outlines.)
+
 ## 0.5.1
 - The shovel **mode toggle** and **"first corner set"** prompts now show above the hotbar (action bar,
   fades after a moment) instead of filling chat. Results (created/updated/carved/removed) and errors

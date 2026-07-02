@@ -47,6 +47,7 @@ public final class ShopGuardCommands {
 
         dispatcher.register(Commands.literal("claim")
                 .then(Commands.literal("info").executes(ctx -> info(ctx.getSource())))
+                .then(Commands.literal("zones").executes(ctx -> zonesToggle(ctx.getSource())))
                 .then(Commands.literal("list").executes(ctx -> list(ctx.getSource())))
                 .then(Commands.literal("remove").executes(ctx -> remove(ctx.getSource(), false)))
                 .then(Commands.literal("trust")
@@ -138,6 +139,21 @@ public final class ShopGuardCommands {
         String name = target.getName().getString();
         s.sendSuccess(() -> Component.literal((add ? "Trusted " : "Untrusted ") + name + " on claim #" + c.id + ".")
                 .withStyle(ChatFormatting.GREEN), false);
+        return 1;
+    }
+
+    private static int zonesToggle(CommandSourceStack s) {
+        ServerPlayer sp = player(s);
+        if (sp == null) return notPlayer(s);
+        boolean on = ClaimVisualizer.toggleZoneViewer(sp.getUUID());
+        if (on && ShopGuard.STORE.zones().isEmpty()) {
+            s.sendSuccess(() -> Component.literal(
+                    "Zone borders ON — no zones are defined yet, so you can claim anywhere.")
+                    .withStyle(ChatFormatting.GRAY), false);
+        } else {
+            s.sendSuccess(() -> Component.literal("Zone borders " + (on ? "ON" : "OFF") + ".")
+                    .withStyle(on ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+        }
         return 1;
     }
 

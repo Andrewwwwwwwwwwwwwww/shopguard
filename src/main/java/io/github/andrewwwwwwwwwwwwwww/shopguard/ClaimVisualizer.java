@@ -1,5 +1,6 @@
 package io.github.andrewwwwwwwwwwwwwww.shopguard;
 
+import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.AdminZone;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.Claim;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.ClaimShape;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -9,7 +10,9 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.Items;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -25,6 +28,19 @@ public final class ClaimVisualizer {
     private static final int INTERVAL = 15;   // ticks between outline pulses
     private static final double RANGE = 48.0; // only outline claims within this of the player
 
+    /** Players who toggled `/claim zones` on — they see admin-zone borders regardless of held item. */
+    private static final Set<UUID> ZONE_VIEWERS = Collections.synchronizedSet(new java.util.HashSet<>());
+
+    public static boolean toggleZoneViewer(UUID player) {
+        if (ZONE_VIEWERS.remove(player)) return false;
+        ZONE_VIEWERS.add(player);
+        return true;
+    }
+
+    public static void clearZoneViewer(UUID player) {
+        ZONE_VIEWERS.remove(player);
+    }
+
     public static void register() {
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             if (server.getTickCount() % INTERVAL != 0) return;
@@ -38,11 +54,12 @@ public final class ClaimVisualizer {
     }
 
     private static void drawForLevel(ServerLevel level) {
+        String dim = level.dimension().identifier().toString();
+        drawZones(level, dim);
+
         List<ServerPlayer> holders = new ArrayList<>();
         for (ServerPlayer p : level.players()) if (holdingTool(p)) holders.add(p);
         if (holders.isEmpty()) return;
-
-        String dim = level.dimension().identifier().toString();
         for (Claim c : ShopGuard.STORE.all()) {
             if (!c.dimension.equals(dim) || c.shape.isEmpty()) continue;
 
@@ -71,6 +88,37 @@ public final class ClaimVisualizer {
                 }
             }
         }
+    }
+
+    /** Outline admin zones (end-rod particles) for players who toggled `/claim zones` on. */
+    private static void drawZones(ServerLevel level, String dim) {
+        List<ServerPlayer> viewers = new ArrayList<>();
+        for (ServerPlayer p : level.players()) if (ZONE_VIEWERS.contains(p.getUUID())) viewers.add(p);
+        if (viewers.isEmpty()) return;
+
+        for (AdminZone z : ShopGuard.STORE.zones()) {
+            if (!z.dimension.equals(dim)) continue;
+            for (ServerPlayer p : viewers) {
+                double px = p.getX(), pz = p.getZ(), py = p.getY() + 0.15;
+                if (z.maxX + 1 < px - RANGE || z.minX > px + RANGE
+                        || z.maxZ + 1 < pz - RANGE || z.minZ > pz + RANGE) continue;
+                // Trace the zone's rectangle border at 1-block steps (borders sit on the outer grid edges).
+                for (int x = z.minX; x <= z.maxX + 1; x++) {
+                    spawnZoneDot(level, p, px, pz, py, x, z.minZ);
+                    spawnZoneDot(level, p, px, pz, py, x, z.maxZ + 1);
+                }
+                for (int zz = z.minZ; zz <= z.maxZ + 1; zz++) {
+                    spawnZoneDot(level, p, px, pz, py, z.minX, zz);
+                    spawnZoneDot(level, p, px, pz, py, z.maxX + 1, zz);
+                }
+            }
+        }
+    }
+
+    private static void spawnZoneDot(ServerLevel level, ServerPlayer p,
+                                     double px, double pz, double py, double x, double z) {
+        if (Math.abs(x - px) > RANGE || Math.abs(z - pz) > RANGE) return;
+        level.sendParticles(p, ParticleTypes.END_ROD, true, true, x, py, z, 1, 0.0, 0.0, 0.0, 0.0);
     }
 
     private static boolean holdingTool(ServerPlayer p) {
