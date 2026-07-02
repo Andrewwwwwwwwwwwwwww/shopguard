@@ -57,8 +57,11 @@ public final class ClaimVisualizer {
         String dim = level.dimension().identifier().toString();
         drawZones(level, dim);
 
+        // Claim outlines show for shovel-holders AND anyone with `/claim zones` on (so players can
+        // see taken land before trying to claim it).
         List<ServerPlayer> holders = new ArrayList<>();
-        for (ServerPlayer p : level.players()) if (holdingTool(p)) holders.add(p);
+        for (ServerPlayer p : level.players())
+            if (holdingTool(p) || ZONE_VIEWERS.contains(p.getUUID())) holders.add(p);
         if (holders.isEmpty()) return;
         for (Claim c : ShopGuard.STORE.all()) {
             if (!c.dimension.equals(dim) || c.shape.isEmpty()) continue;
@@ -79,11 +82,13 @@ public final class ClaimVisualizer {
                 double px = p.getX(), pz = p.getZ(), py = p.getY() + 0.15;
                 if (c.shape.maxX() < px - RANGE || c.shape.minX() > px + RANGE
                         || c.shape.maxZ() < pz - RANGE || c.shape.minZ() > pz + RANGE) continue;
+                // Green = your claim, orange = someone else's (so taken land reads at a glance).
+                var particle = c.owner.equals(p.getUUID()) ? ParticleTypes.HAPPY_VILLAGER : ParticleTypes.WAX_ON;
                 for (int i = 0; i + 3 < segs.length; i += 4) {
                     double mx = (segs[i] + segs[i + 2]) / 2.0;
                     double mz = (segs[i + 1] + segs[i + 3]) / 2.0;
                     if (Math.abs(mx - px) > RANGE || Math.abs(mz - pz) > RANGE) continue;
-                    level.sendParticles(p, ParticleTypes.HAPPY_VILLAGER, true, true,
+                    level.sendParticles(p, particle, true, true,
                             mx, py, mz, 1, 0.0, 0.0, 0.0, 0.0);
                 }
             }

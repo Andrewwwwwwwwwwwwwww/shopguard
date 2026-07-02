@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.6.1
+- **`/claim zones` now shows everything around you**, not just the admin zones: every claim's outline
+  too — **green** for your claims, **orange** for other players' — so you can see exactly what land is
+  taken before trying to claim. Still no tool needed, still resets on relog. (Holding the shovel shows
+  claim outlines as before, with the same colors.)
+
 ## 0.6.0
 - **`/claim zones`** (any player): toggle admin-zone borders on/off — white end-rod particles trace the
   build-area perimeter so players can see exactly where they're allowed to claim, no tool needed.
