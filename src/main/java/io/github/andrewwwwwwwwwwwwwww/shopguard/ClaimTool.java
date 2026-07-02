@@ -63,6 +63,12 @@ public final class ClaimTool {
         });
     }
 
+    /** Forget a player's pending corner and mode (called on disconnect). */
+    public static void clearPlayer(UUID uid) {
+        CARVE_MODE.remove(uid);
+        PENDING.remove(uid);
+    }
+
     private static void toggleMode(ServerPlayer sp) {
         UUID uid = sp.getUUID();
         boolean carve = !CARVE_MODE.getOrDefault(uid, false);

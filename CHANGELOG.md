@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.1
+- **Slimmer commands.** Players now see just three options under `/claim`:
+  - bare **`/claim`** shows everything (claim here + your claims + used/max totals — replaces
+    `info` and `list`),
+  - **`/claim show`** toggles borders (replaces `/claim zones`),
+  - **`/claim trust <player>`** now toggles (replaces `untrust`),
+  - `/claim remove` unchanged; `/claim admin remove` dropped (ops can already `/claim remove`
+    anyone's claim). Ops keep `/claim zone add|list|remove`.
+- Internal cleanup: removed dead code left behind by earlier reworks; the claim/zone tools forget
+  your pending corner and mode when you log out; README brought up to date.
+
 ## 0.7.0
 - **The admin zone tool (golden hoe) now works exactly like the claim shovel, but for zones.**
   Right-click two corners to **add** area; right-click the **sky** to toggle ADD ↔ CARVE mode and

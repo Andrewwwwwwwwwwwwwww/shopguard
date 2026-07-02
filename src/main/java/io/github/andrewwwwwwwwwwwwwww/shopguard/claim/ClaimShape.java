@@ -30,11 +30,6 @@ public final class ClaimShape {
         this.cells = cells;
     }
 
-    /** A deep copy, for validating an edit before committing it to the real shape. */
-    public ClaimShape copy() {
-        return new ClaimShape(minX, minZ, width, depth, (BitSet) cells.clone());
-    }
-
     public boolean isEmpty() { return width == 0 || cells.isEmpty(); }
     public int count() { return cells.cardinality(); }
     public int minX() { return minX; }
@@ -124,11 +119,6 @@ public final class ClaimShape {
 
     @FunctionalInterface
     public interface ColumnTest { boolean test(int x, int z); }
-
-    /** Outline of this region alone (every side whose neighbour is outside this shape). */
-    public int[] boundaryFlat() {
-        return boundaryFlat(this::contains);
-    }
 
     /**
      * The outline of the region as a flat array of grid-aligned unit edges — every side of a claimed

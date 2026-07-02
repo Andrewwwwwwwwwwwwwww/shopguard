@@ -39,9 +39,13 @@ public class ShopGuard implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
                 ShopGuardCommands.register(dispatcher));
 
-        // Zone-border visibility is a session toggle; reset it when the player leaves.
-        ServerPlayConnectionEvents.DISCONNECT.register((handler, srv) ->
-                ClaimVisualizer.clearZoneViewer(handler.player.getUUID()));
+        // Per-player session state (border toggle, pending tool corners/modes) resets on leave.
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, srv) -> {
+            var uid = handler.player.getUUID();
+            ClaimVisualizer.clearZoneViewer(uid);
+            ClaimTool.clearPlayer(uid);
+            AdminZoneTool.clearPlayer(uid);
+        });
 
         ServerLifecycleEvents.SERVER_STARTED.register(srv -> {
             server = srv;

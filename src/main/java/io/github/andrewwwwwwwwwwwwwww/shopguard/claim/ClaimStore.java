@@ -33,7 +33,6 @@ public final class ClaimStore {
     }
 
     public Collection<Claim> all() { return claims.values(); }
-    public Claim get(long id) { return claims.get(id); }
 
     public List<Claim> byOwner(UUID owner) {
         List<Claim> out = new ArrayList<>();
@@ -45,13 +44,6 @@ public final class ClaimStore {
         int n = 0;
         for (Claim c : claims.values()) if (c.owner.equals(owner)) n += c.shape.count();
         return n;
-    }
-
-    /** True if {@code shape} overlaps any claim other than {@code excludeId} in the dimension. */
-    public boolean overlapsOther(String dim, ClaimShape shape, long excludeId) {
-        for (Claim c : claims.values())
-            if (c.id != excludeId && c.dimension.equals(dim) && c.shape.overlaps(shape)) return true;
-        return false;
     }
 
     /** True if {@code shape} overlaps any claim whose id is not in {@code excludeIds}, in the dimension. */
