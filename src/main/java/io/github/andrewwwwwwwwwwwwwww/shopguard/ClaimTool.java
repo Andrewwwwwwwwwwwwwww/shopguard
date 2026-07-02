@@ -2,6 +2,7 @@ package io.github.andrewwwwwwwwwwwwwww.shopguard;
 
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.Claim;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.ClaimShape;
+import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -24,16 +25,29 @@ public final class ClaimTool {
     private ClaimTool() {}
 
     private static final Map<UUID, Pending> PENDING = new HashMap<>();
+    private static final Map<UUID, Long> LAST_ATTACK = new HashMap<>();
 
     private record Pending(BlockPos first, boolean carve) {}
 
     public static void register() {
+        // Right-click two corners: add a rectangle to your claim.
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (world.isClientSide() || !(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
-            ItemStack held = player.getItemInHand(hand);
-            if (held.getItem() != Items.GOLDEN_SHOVEL) return InteractionResult.PASS;
-            handle(sp, hit.getBlockPos(), sp.isShiftKeyDown());
+            if (player.getItemInHand(hand).getItem() != Items.GOLDEN_SHOVEL) return InteractionResult.PASS;
+            handle(sp, hit.getBlockPos(), false);
             return InteractionResult.SUCCESS; // consume — also cancels vanilla path-making
+        });
+        // Left-click ("dig") two corners: carve a rectangle back out of your claim.
+        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+            if (world.isClientSide() || !(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
+            if (player.getItemInHand(hand).getItem() != Items.GOLDEN_SHOVEL) return InteractionResult.PASS;
+            long now = sp.level().getGameTime();
+            Long last = LAST_ATTACK.get(sp.getUUID());
+            if (last == null || now - last >= 4) { // debounce a held left-click
+                LAST_ATTACK.put(sp.getUUID(), now);
+                handle(sp, pos, true);
+            }
+            return InteractionResult.FAIL; // the golden shovel is a claim tool — don't dig real blocks with it
         });
     }
 
@@ -42,8 +56,9 @@ public final class ClaimTool {
         Pending pend = PENDING.get(uid);
         if (pend == null || pend.carve() != carve) {
             PENDING.put(uid, new Pending(pos.immutable(), carve));
-            sp.sendSystemMessage(Component.literal(
-                    (carve ? "Carve" : "Claim") + ": first corner set — right-click the opposite corner.")
+            sp.sendSystemMessage(Component.literal(carve
+                    ? "Carve: first corner set — dig (left-click) the opposite corner."
+                    : "Claim: first corner set — right-click the opposite corner.")
                     .withStyle(ChatFormatting.YELLOW));
             return;
         }

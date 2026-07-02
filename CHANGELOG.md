@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.0
+- Claim outlines now only show while you're **holding the golden shovel** (no more always-on clutter).
+- **Adjacent claims of the same owner merge** into one outline — the shared border between them isn't
+  drawn, so they read as attached.
+- **Carve by digging:** left-click two corners with the shovel to remove a rectangle from your claim
+  (replaces the fiddly sneak + right-click). While it's the claim tool the golden shovel no longer digs
+  real blocks — use another tool for that.
+
 ## 0.3.0
 - **Claim outlines.** Claim boundaries are traced with particles for nearby players, server-side, so
   it works on any client without a client mod. (A client-rendered glowing outline was attempted first

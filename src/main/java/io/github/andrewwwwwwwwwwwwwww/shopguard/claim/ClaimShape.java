@@ -94,21 +94,27 @@ public final class ClaimShape {
     @FunctionalInterface
     public interface ColumnTest { boolean test(int x, int z); }
 
+    /** Outline of this region alone (every side whose neighbour is outside this shape). */
+    public int[] boundaryFlat() {
+        return boundaryFlat(this::contains);
+    }
+
     /**
      * The outline of the region as a flat array of grid-aligned unit edges — every side of a claimed
-     * column whose neighbour is outside the claim — as {@code [x1,z1,x2,z2, x1,z1,z2,z2, ...]} in world
-     * grid coordinates. Used to draw the claim boundary client-side.
+     * column whose neighbour is <em>not</em> covered by {@code neighbourCovered} — as
+     * {@code [x1,z1,x2,z2, ...]} in world grid coordinates. Passing a predicate that also covers the
+     * owner's other claims makes touching same-owner claims render as one merged outline.
      */
-    public int[] boundaryFlat() {
+    public int[] boundaryFlat(ColumnTest neighbourCovered) {
         java.util.List<int[]> segs = new java.util.ArrayList<>();
         for (int z = 0; z < depth; z++) {
             for (int x = 0; x < width; x++) {
                 if (!cells.get(x + z * width)) continue;
                 int gx = minX + x, gz = minZ + z;
-                if (!contains(gx, gz - 1)) segs.add(new int[]{gx, gz, gx + 1, gz});         // north
-                if (!contains(gx, gz + 1)) segs.add(new int[]{gx, gz + 1, gx + 1, gz + 1}); // south
-                if (!contains(gx - 1, gz)) segs.add(new int[]{gx, gz, gx, gz + 1});         // west
-                if (!contains(gx + 1, gz)) segs.add(new int[]{gx + 1, gz, gx + 1, gz + 1}); // east
+                if (!neighbourCovered.test(gx, gz - 1)) segs.add(new int[]{gx, gz, gx + 1, gz});         // north
+                if (!neighbourCovered.test(gx, gz + 1)) segs.add(new int[]{gx, gz + 1, gx + 1, gz + 1}); // south
+                if (!neighbourCovered.test(gx - 1, gz)) segs.add(new int[]{gx, gz, gx, gz + 1});         // west
+                if (!neighbourCovered.test(gx + 1, gz)) segs.add(new int[]{gx + 1, gz, gx + 1, gz + 1}); // east
             }
         }
         int[] flat = new int[segs.size() * 4];
