@@ -10,6 +10,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.HitResult;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,6 +36,9 @@ public final class ClaimTool {
     private static final Map<UUID, Boolean> CARVE_MODE = new HashMap<>();
     private static final Map<UUID, BlockPos> PENDING = new HashMap<>();
 
+    /** How far the tool can target a corner beyond vanilla reach (aim at the ground and click). */
+    public static final double CORNER_RANGE = 64.0;
+
     public static void register() {
         // Right-click a block: set a corner (applies the current mode on the second corner).
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
@@ -42,11 +47,18 @@ public final class ClaimTool {
             handleCorner(sp, hit.getBlockPos());
             return InteractionResult.SUCCESS; // consume — also cancels vanilla path-making
         });
-        // Right-click the air: toggle CLAIM <-> CARVE mode.
+        // Right-click without a block in reach: vanilla treats any aim past ~4.5 blocks as an "air
+        // click". Raycast the player's view — a block in sight (up to CORNER_RANGE) sets that corner;
+        // only a true sky-aim toggles CLAIM <-> CARVE mode.
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (world.isClientSide() || !(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
             if (player.getItemInHand(hand).getItem() != Items.GOLDEN_SHOVEL) return InteractionResult.PASS;
-            toggleMode(sp);
+            HitResult hit = sp.pick(CORNER_RANGE, 1.0f, false);
+            if (hit.getType() == HitResult.Type.BLOCK) {
+                handleCorner(sp, ((BlockHitResult) hit).getBlockPos());
+            } else {
+                toggleMode(sp);
+            }
             return InteractionResult.SUCCESS;
         });
     }

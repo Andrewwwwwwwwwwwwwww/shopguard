@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.6.3
+- **Fixed the shovel toggling mode when aiming at distant blocks.** Vanilla treats any right-click past
+  ~4.5 blocks as an "air click"; the tool now raycasts your view up to 64 blocks — a block in your
+  crosshair sets that corner (so you can set corners from across the plot), and the CLAIM/CARVE toggle
+  only fires when you're genuinely aiming at the sky.
+- The admin golden hoe gets the same long-range corner targeting (sky-aim does nothing for it).
+
 ## 0.6.2
 - Admin-zone borders are now **dark red** (dust particles) instead of white — clearly distinct from
   the green (yours) / orange (others') claim outlines.
