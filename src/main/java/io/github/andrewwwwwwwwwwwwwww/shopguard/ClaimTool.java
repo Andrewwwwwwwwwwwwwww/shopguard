@@ -2,69 +2,76 @@ package io.github.andrewwwwwwwwwwwwwww.shopguard;
 
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.Claim;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.ClaimShape;
-import net.fabricmc.fabric.api.event.player.AttackBlockCallback;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * The golden-shovel claim tool. Right-click two opposite corners to <b>add</b> a rectangle (creates a
- * new claim, or extends the one you clicked inside); sneak + right-click two corners to <b>carve</b> a
- * rectangle back out. Consumes the click so the golden shovel no longer makes dirt paths.
+ * The golden-shovel claim tool.
+ * <ul>
+ *   <li>Right-click two corners → apply the current mode to that rectangle.</li>
+ *   <li>Right-click the air → toggle between CLAIM (add area) and CARVE (remove area).</li>
+ * </ul>
+ * Adding a rectangle that touches any of your own claims merges them all into one claim (so touching
+ * claims are truly one). The shovel does NOT hijack left-click, so you can still break blocks with it.
  */
 public final class ClaimTool {
     private ClaimTool() {}
 
-    private static final Map<UUID, Pending> PENDING = new HashMap<>();
-    private static final Map<UUID, Long> LAST_ATTACK = new HashMap<>();
-
-    private record Pending(BlockPos first, boolean carve) {}
+    private static final Map<UUID, Boolean> CARVE_MODE = new HashMap<>();
+    private static final Map<UUID, BlockPos> PENDING = new HashMap<>();
 
     public static void register() {
-        // Right-click two corners: add a rectangle to your claim.
+        // Right-click a block: set a corner (applies the current mode on the second corner).
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (world.isClientSide() || !(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
             if (player.getItemInHand(hand).getItem() != Items.GOLDEN_SHOVEL) return InteractionResult.PASS;
-            handle(sp, hit.getBlockPos(), false);
+            handleCorner(sp, hit.getBlockPos());
             return InteractionResult.SUCCESS; // consume — also cancels vanilla path-making
         });
-        // Left-click ("dig") two corners: carve a rectangle back out of your claim.
-        AttackBlockCallback.EVENT.register((player, world, hand, pos, direction) -> {
+        // Right-click the air: toggle CLAIM <-> CARVE mode.
+        UseItemCallback.EVENT.register((player, world, hand) -> {
             if (world.isClientSide() || !(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
             if (player.getItemInHand(hand).getItem() != Items.GOLDEN_SHOVEL) return InteractionResult.PASS;
-            long now = sp.level().getGameTime();
-            Long last = LAST_ATTACK.get(sp.getUUID());
-            if (last == null || now - last >= 4) { // debounce a held left-click
-                LAST_ATTACK.put(sp.getUUID(), now);
-                handle(sp, pos, true);
-            }
-            return InteractionResult.FAIL; // the golden shovel is a claim tool — don't dig real blocks with it
+            toggleMode(sp);
+            return InteractionResult.SUCCESS;
         });
     }
 
-    private static void handle(ServerPlayer sp, BlockPos pos, boolean carve) {
+    private static void toggleMode(ServerPlayer sp) {
         UUID uid = sp.getUUID();
-        Pending pend = PENDING.get(uid);
-        if (pend == null || pend.carve() != carve) {
-            PENDING.put(uid, new Pending(pos.immutable(), carve));
-            sp.sendSystemMessage(Component.literal(carve
-                    ? "Carve: first corner set — dig (left-click) the opposite corner."
-                    : "Claim: first corner set — right-click the opposite corner.")
+        boolean carve = !CARVE_MODE.getOrDefault(uid, false);
+        CARVE_MODE.put(uid, carve);
+        PENDING.remove(uid);
+        sp.sendSystemMessage(Component.literal("Shovel mode: " + (carve ? "CARVE (remove area)" : "CLAIM (add area)"))
+                .withStyle(carve ? ChatFormatting.GOLD : ChatFormatting.GREEN));
+    }
+
+    private static void handleCorner(ServerPlayer sp, BlockPos pos) {
+        UUID uid = sp.getUUID();
+        boolean carve = CARVE_MODE.getOrDefault(uid, false);
+        BlockPos first = PENDING.remove(uid);
+        if (first == null) {
+            PENDING.put(uid, pos.immutable());
+            sp.sendSystemMessage(Component.literal(
+                    (carve ? "Carve" : "Claim") + ": first corner set — right-click the opposite corner.")
                     .withStyle(ChatFormatting.YELLOW));
             return;
         }
-        BlockPos a = pend.first();
-        PENDING.remove(uid);
-        if (carve) carve(sp, a, pos); else add(sp, a, pos);
+        if (carve) carve(sp, first, pos); else add(sp, first, pos);
     }
 
     private static String dim(ServerPlayer sp) {
@@ -75,35 +82,59 @@ public final class ClaimTool {
         String dim = dim(sp);
         UUID uid = sp.getUUID();
         boolean op = ProtectionHandler.isOp(sp);
-        Claim target = ShopGuard.STORE.claimAt(dim, a.getX(), a.getZ());
-        if (target != null && !target.owner.equals(uid) && !op) {
-            error(sp, "That corner is inside another player's claim.");
+
+        ClaimShape merged = new ClaimShape();
+        merged.addRect(a.getX(), a.getZ(), b.getX(), b.getZ());
+
+        // Flood-merge with all of the player's claims (in this dimension) that touch the result.
+        List<Claim> absorb = new ArrayList<>();
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (Claim c : ShopGuard.STORE.all()) {
+                if (!c.owner.equals(uid) || !c.dimension.equals(dim) || absorb.contains(c)) continue;
+                if (merged.touches(c.shape)) {
+                    merged.union(c.shape);
+                    absorb.add(c);
+                    changed = true;
+                }
+            }
+        }
+
+        Set<Long> absorbedIds = new HashSet<>();
+        int absorbedCells = 0;
+        for (Claim c : absorb) { absorbedIds.add(c.id); absorbedCells += c.shape.count(); }
+
+        if (ShopGuard.STORE.overlapsOther(dim, merged, absorbedIds)) {
+            error(sp, "That overlaps another player's claim.");
             return;
         }
-        Claim editing = (target != null && (target.owner.equals(uid) || op)) ? target : null;
-
-        ClaimShape sim = editing != null ? editing.shape.copy() : new ClaimShape();
-        sim.addRect(a.getX(), a.getZ(), b.getX(), b.getZ());
-
-        long excludeId = editing != null ? editing.id : -1L;
-        if (ShopGuard.STORE.overlapsOther(dim, sim, excludeId)) { error(sp, "That overlaps another player's claim."); return; }
-        if (!ShopGuard.STORE.allowedByZones(dim, sim)) { error(sp, "Claims can only be made inside a claim zone here."); return; }
-        if (sim.count() > ShopGuard.CONFIG.maxClaimArea) { error(sp, "Too big — max " + ShopGuard.CONFIG.maxClaimArea + " blocks per claim."); return; }
-        int ownerTotal = ShopGuard.STORE.totalCellsOfOwner(uid)
-                - (editing != null ? editing.shape.count() : 0) + sim.count();
+        if (!ShopGuard.STORE.allowedByZones(dim, merged)) {
+            error(sp, "Claims can only be made inside a claim zone here.");
+            return;
+        }
+        if (merged.count() > ShopGuard.CONFIG.maxClaimArea) {
+            error(sp, "Too big — max " + ShopGuard.CONFIG.maxClaimArea + " blocks per claim.");
+            return;
+        }
+        int ownerTotal = ShopGuard.STORE.totalCellsOfOwner(uid) - absorbedCells + merged.count();
         if (!op && ownerTotal > ShopGuard.CONFIG.maxTotalPerPlayer) {
             error(sp, "That would exceed your total claim limit (" + ShopGuard.CONFIG.maxTotalPerPlayer + " blocks).");
             return;
         }
 
-        boolean created = editing == null;
-        if (created) {
-            editing = ShopGuard.STORE.newClaim(uid, sp.getName().getString(), dim);
+        boolean mergedExisting = !absorb.isEmpty();
+        Claim result;
+        if (mergedExisting) {
+            result = absorb.get(0); // keep the first claim's id, absorb the rest
+            for (int i = 1; i < absorb.size(); i++) ShopGuard.STORE.removeNoSave(absorb.get(i).id);
+        } else {
+            result = ShopGuard.STORE.newClaim(uid, sp.getName().getString(), dim);
         }
-        editing.shape.addRect(a.getX(), a.getZ(), b.getX(), b.getZ());
+        result.shape = merged;
         ShopGuard.STORE.save();
         ClaimVisualizer.refresh(sp.level());
-        ok(sp, (created ? "Claim created" : "Claim extended") + " — " + editing.shape.count() + " blocks.");
+        ok(sp, (mergedExisting ? "Claim updated" : "Claim created") + " — " + result.shape.count() + " blocks.");
     }
 
     private static void carve(ServerPlayer sp, BlockPos a, BlockPos b) {
@@ -112,7 +143,7 @@ public final class ClaimTool {
         boolean op = ProtectionHandler.isOp(sp);
         Claim target = ShopGuard.STORE.claimAt(dim, a.getX(), a.getZ());
         if (target == null || (!target.owner.equals(uid) && !op)) {
-            error(sp, "Sneak-carve from inside your own claim.");
+            error(sp, "Carve from inside your own claim (first corner must be claimed land).");
             return;
         }
         target.shape.removeRect(a.getX(), a.getZ(), b.getX(), b.getZ());

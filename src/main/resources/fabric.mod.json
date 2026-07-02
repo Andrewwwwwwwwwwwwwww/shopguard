@@ -11,6 +11,7 @@
   "entrypoints": {
     "main": ["io.github.andrewwwwwwwwwwwwwww.shopguard.ShopGuard"]
   },
+  "mixins": ["shopguard.mixins.json"],
   "depends": {
     "fabricloader": ">=0.19.3",
     "fabric-api": ">=0.152.1",

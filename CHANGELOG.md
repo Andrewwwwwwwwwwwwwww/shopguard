@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.5.0
+- **Touching claims merge into one.** Adding a rectangle that touches any of your own claims fuses them
+  into a single claim — extending no longer piles up separate claims, and removing one removes the whole
+  thing. Non-touching claims stay separate, so multiple shops still work.
+- **The shovel no longer blocks breaking.** Carve moved off left-click: **right-click the air** to
+  toggle CLAIM ↔ CARVE mode, then right-click two corners. You and trusted players can break blocks
+  with the shovel again.
+- **Redstone control policy.** By default non-owners can't use buttons/levers in a claim (doors, gates,
+  trapdoors, and pressure plates still work for walking through). Set `allowRedstoneControls: true` in
+  `config/shopguard.json` to allow them.
+- **Piston protection.** Pistons can't push or pull blocks across a claim boundary.
+- **Zone command uses block-position corners:** `/claim zone add <corner1> <corner2>` with crosshair
+  tab-completion and `~ ~ ~` support; zone IDs also tab-complete for `zone remove`.
+- **Admin zone tool:** ops can hold a **golden hoe** and right-click two corners to define a claim zone.
+
 ## 0.4.1
 - Claim outlines now refresh **immediately** after you add, carve, or remove a claim, instead of
   waiting up to ~0.75s for the next pulse.

@@ -54,6 +54,18 @@ public final class ClaimStore {
         return false;
     }
 
+    /** True if {@code shape} overlaps any claim whose id is not in {@code excludeIds}, in the dimension. */
+    public boolean overlapsOther(String dim, ClaimShape shape, java.util.Set<Long> excludeIds) {
+        for (Claim c : claims.values())
+            if (!excludeIds.contains(c.id) && c.dimension.equals(dim) && c.shape.overlaps(shape)) return true;
+        return false;
+    }
+
+    /** Remove without persisting (caller saves once after a batch, e.g. a merge). */
+    public void removeNoSave(long id) {
+        claims.remove(id);
+    }
+
     // ---- admin zones ----
 
     public boolean hasZones(String dim) {

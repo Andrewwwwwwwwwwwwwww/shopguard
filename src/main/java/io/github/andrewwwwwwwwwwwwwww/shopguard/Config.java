@@ -21,6 +21,10 @@ public final class Config {
     /** Maximum total footprint a single player may own across all their claims. */
     public int maxTotalPerPlayer = 40000;
 
+    /** If false (default), non-owners can't use buttons/levers in a claim (prevents redstone griefing);
+     *  doors/gates/trapdoors/pressure plates for walking through are always allowed. */
+    public boolean allowRedstoneControls = false;
+
     public static Config load() {
         Path path = path();
         try {

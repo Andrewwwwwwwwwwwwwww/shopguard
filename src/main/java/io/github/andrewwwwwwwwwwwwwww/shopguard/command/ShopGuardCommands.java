@@ -1,7 +1,6 @@
 package io.github.andrewwwwwwwwwwwwwww.shopguard.command;
 
 import com.mojang.brigadier.CommandDispatcher;
-import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.ClaimVisualizer;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.ProtectionHandler;
@@ -11,7 +10,9 @@ import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.Claim;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,15 +25,11 @@ public final class ShopGuardCommands {
     private ShopGuardCommands() {}
 
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
-        var zoneAddArgs = Commands.argument("x1", IntegerArgumentType.integer())
-                .then(Commands.argument("z1", IntegerArgumentType.integer())
-                        .then(Commands.argument("x2", IntegerArgumentType.integer())
-                                .then(Commands.argument("z2", IntegerArgumentType.integer())
-                                        .executes(ctx -> zoneAdd(ctx.getSource(),
-                                                IntegerArgumentType.getInteger(ctx, "x1"),
-                                                IntegerArgumentType.getInteger(ctx, "z1"),
-                                                IntegerArgumentType.getInteger(ctx, "x2"),
-                                                IntegerArgumentType.getInteger(ctx, "z2"))))));
+        var zoneAddArgs = Commands.argument("corner1", BlockPosArgument.blockPos())
+                .then(Commands.argument("corner2", BlockPosArgument.blockPos())
+                        .executes(ctx -> zoneAdd(ctx.getSource(),
+                                BlockPosArgument.getBlockPos(ctx, "corner1"),
+                                BlockPosArgument.getBlockPos(ctx, "corner2"))));
 
         var zone = Commands.literal("zone")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
@@ -40,6 +37,8 @@ public final class ShopGuardCommands {
                 .then(Commands.literal("list").executes(ctx -> zoneList(ctx.getSource())))
                 .then(Commands.literal("remove")
                         .then(Commands.argument("id", LongArgumentType.longArg())
+                                .suggests((c, bld) -> SharedSuggestionProvider.suggest(
+                                        ShopGuard.STORE.zones().stream().map(z -> String.valueOf(z.id)), bld))
                                 .executes(ctx -> zoneRemove(ctx.getSource(), LongArgumentType.getLong(ctx, "id")))));
 
         var admin = Commands.literal("admin")
@@ -142,10 +141,10 @@ public final class ShopGuardCommands {
         return 1;
     }
 
-    private static int zoneAdd(CommandSourceStack s, int x1, int z1, int x2, int z2) {
+    private static int zoneAdd(CommandSourceStack s, BlockPos c1, BlockPos c2) {
         ServerPlayer sp = player(s);
         if (sp == null) return notPlayer(s);
-        AdminZone z = ShopGuard.STORE.addZone(dim(sp), x1, z1, x2, z2);
+        AdminZone z = ShopGuard.STORE.addZone(dim(sp), c1.getX(), c1.getZ(), c2.getX(), c2.getZ());
         s.sendSuccess(() -> Component.literal("Added claim zone #" + z.id + " ("
                 + z.minX + "," + z.minZ + " to " + z.maxX + "," + z.maxZ + ").")
                 .withStyle(ChatFormatting.GREEN), false);

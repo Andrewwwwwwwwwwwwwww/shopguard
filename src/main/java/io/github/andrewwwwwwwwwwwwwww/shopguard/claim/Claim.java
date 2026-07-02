@@ -12,7 +12,7 @@ public final class Claim {
     public UUID owner;
     public String ownerName;
     public String dimension;
-    public final ClaimShape shape;
+    public ClaimShape shape;
     public final Set<UUID> trusted = new HashSet<>();
 
     public Claim(long id, UUID owner, String ownerName, String dimension) {

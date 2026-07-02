@@ -52,8 +52,13 @@ public final class ProtectionHandler {
             if (claim == null || mayBuild(sp, claim)) return InteractionResult.PASS;
 
             BlockState clicked = world.getBlockState(pos);
-            if (isPublicInteract(clicked)) return InteractionResult.PASS;               // doors/gates/buttons/levers/plates
-            if (world.getBlockEntity(pos) instanceof Container) {                        // chests/barrels/furnaces/etc.
+            if (isMovementInteract(clicked)) return InteractionResult.PASS;             // doors/gates/trapdoors/plates
+            if (isRedstoneControl(clicked)) {                                           // buttons/levers
+                if (ShopGuard.CONFIG.allowRedstoneControls) return InteractionResult.PASS;
+                notifyBlocked(sp, claim);
+                return InteractionResult.FAIL;
+            }
+            if (world.getBlockEntity(pos) instanceof Container) {                       // chests/barrels/furnaces/etc.
                 notifyBlocked(sp, claim);
                 return InteractionResult.FAIL;
             }
@@ -95,13 +100,18 @@ public final class ProtectionHandler {
         return isOp(sp) || claim.mayBuild(sp.getUUID());
     }
 
-    private static boolean isPublicInteract(BlockState s) {
+    /** Blocks a visitor may use to move through a build — always allowed. */
+    private static boolean isMovementInteract(BlockState s) {
         return s.getBlock() instanceof DoorBlock
             || s.getBlock() instanceof TrapDoorBlock
             || s.getBlock() instanceof FenceGateBlock
-            || s.getBlock() instanceof ButtonBlock
-            || s.getBlock() instanceof LeverBlock
             || s.getBlock() instanceof BasePressurePlateBlock;
+    }
+
+    /** Redstone controls — allowed for visitors only if {@code allowRedstoneControls} is enabled. */
+    private static boolean isRedstoneControl(BlockState s) {
+        return s.getBlock() instanceof ButtonBlock
+            || s.getBlock() instanceof LeverBlock;
     }
 
     private static void notifyBlocked(ServerPlayer sp, Claim claim) {

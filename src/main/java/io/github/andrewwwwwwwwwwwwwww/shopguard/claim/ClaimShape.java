@@ -83,6 +83,37 @@ public final class ClaimShape {
         return false;
     }
 
+    /** True if the two shapes overlap OR are orthogonally adjacent (share an edge). */
+    public boolean touches(ClaimShape o) {
+        if (width == 0 || o.width == 0) return false;
+        if (maxX() + 1 < o.minX() || o.maxX() + 1 < minX()
+                || maxZ() + 1 < o.minZ() || o.maxZ() + 1 < minZ()) return false;
+        for (int z = 0; z < depth; z++)
+            for (int x = 0; x < width; x++) {
+                if (!cells.get(x + z * width)) continue;
+                int gx = minX + x, gz = minZ + z;
+                if (o.contains(gx, gz) || o.contains(gx + 1, gz) || o.contains(gx - 1, gz)
+                        || o.contains(gx, gz + 1) || o.contains(gx, gz - 1)) return true;
+            }
+        return false;
+    }
+
+    /** Add every set column of {@code o} into this shape (used to merge touching claims into one). */
+    public void union(ClaimShape o) {
+        if (o.width == 0) return;
+        if (width == 0) {
+            minX = o.minX; minZ = o.minZ; width = o.width; depth = o.depth;
+            cells = (BitSet) o.cells.clone();
+            return;
+        }
+        reframe(Math.min(minX, o.minX), Math.min(minZ, o.minZ),
+                Math.max(maxX(), o.maxX()), Math.max(maxZ(), o.maxZ()));
+        for (int z = 0; z < o.depth; z++)
+            for (int x = 0; x < o.width; x++)
+                if (o.cells.get(x + z * o.width))
+                    cells.set((o.minX + x - minX) + (o.minZ + z - minZ) * width);
+    }
+
     /** True if every set column satisfies {@code test} (used for the admin-zone containment check). */
     public boolean allColumnsMatch(ColumnTest test) {
         for (int z = 0; z < depth; z++)

@@ -31,6 +31,7 @@ public class ShopGuard implements ModInitializer {
         CONFIG = Config.load();
 
         ClaimTool.register();       // registered first so shovel clicks are consumed before protection
+        AdminZoneTool.register();
         ProtectionHandler.register();
         ClaimVisualizer.register();
 
