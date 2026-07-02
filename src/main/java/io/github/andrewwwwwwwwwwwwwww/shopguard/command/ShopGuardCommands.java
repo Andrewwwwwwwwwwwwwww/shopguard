@@ -3,6 +3,7 @@ package io.github.andrewwwwwwwwwwwwwww.shopguard.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.LongArgumentType;
+import io.github.andrewwwwwwwwwwwwwww.shopguard.ClaimVisualizer;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.ProtectionHandler;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.ShopGuard;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.AdminZone;
@@ -116,6 +117,7 @@ public final class ShopGuardCommands {
             return 0;
         }
         ShopGuard.STORE.remove(c.id);
+        ClaimVisualizer.refresh(sp.level());
         s.sendSuccess(() -> Component.literal("Removed claim #" + c.id + ".").withStyle(ChatFormatting.YELLOW), false);
         return 1;
     }

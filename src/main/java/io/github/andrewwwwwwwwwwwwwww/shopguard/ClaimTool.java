@@ -102,6 +102,7 @@ public final class ClaimTool {
         }
         editing.shape.addRect(a.getX(), a.getZ(), b.getX(), b.getZ());
         ShopGuard.STORE.save();
+        ClaimVisualizer.refresh(sp.level());
         ok(sp, (created ? "Claim created" : "Claim extended") + " — " + editing.shape.count() + " blocks.");
     }
 
@@ -122,6 +123,7 @@ public final class ClaimTool {
             ShopGuard.STORE.save();
             ok(sp, "Carved — " + target.shape.count() + " blocks remain.");
         }
+        ClaimVisualizer.refresh(sp.level());
     }
 
     private static void error(ServerPlayer sp, String msg) {

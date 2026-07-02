@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.4.1
+- Claim outlines now refresh **immediately** after you add, carve, or remove a claim, instead of
+  waiting up to ~0.75s for the next pulse.
+
 ## 0.4.0
 - Claim outlines now only show while you're **holding the golden shovel** (no more always-on clutter).
 - **Adjacent claims of the same owner merge** into one outline — the shared border between them isn't
