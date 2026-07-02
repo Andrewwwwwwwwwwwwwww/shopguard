@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.2
+- **Fixed a single right-click instantly creating a one-block claim.** One physical click can reach
+  the server as two interaction packets (block-use + item-use); the second was being read as the
+  second corner. Tool clicks are now debounced — the first click sets a corner and waits, as intended.
+  (Same fix applied to the admin zone hoe.)
+- **Claim numbers are now per-player** — your claims are #1, #2, … regardless of anyone else's — and
+  **admin zones number independently** on their own sequence. Existing saves migrate automatically.
+
 ## 0.7.1
 - **Slimmer commands.** Players now see just three options under `/claim`:
   - bare **`/claim`** shows everything (claim here + your claims + used/max totals — replaces

@@ -84,9 +84,13 @@ public final class ShopGuardCommands {
         Claim here = standingClaim(sp);
         if (here == null) {
             s.sendSuccess(() -> Component.literal("Here: unclaimed.").withStyle(ChatFormatting.GRAY), false);
+        } else if (here.owner.equals(sp.getUUID())) {
+            int ord = ShopGuard.STORE.ordinalOf(here);
+            s.sendSuccess(() -> Component.literal("Here: your claim #" + ord + " — "
+                    + here.shape.count() + " blocks.").withStyle(ChatFormatting.AQUA), false);
         } else {
-            s.sendSuccess(() -> Component.literal("Here: claim #" + here.id + " — " + here.ownerName
-                    + ", " + here.shape.count() + " blocks.").withStyle(ChatFormatting.AQUA), false);
+            s.sendSuccess(() -> Component.literal("Here: " + here.ownerName + "'s claim — "
+                    + here.shape.count() + " blocks.").withStyle(ChatFormatting.AQUA), false);
         }
 
         List<Claim> mine = ShopGuard.STORE.byOwner(sp.getUUID());
@@ -95,8 +99,10 @@ public final class ShopGuardCommands {
         } else {
             s.sendSuccess(() -> Component.literal("Your claims (" + mine.size() + "):")
                     .withStyle(ChatFormatting.AQUA), false);
+            int ord = 0;
             for (Claim c : mine) {
-                s.sendSuccess(() -> Component.literal(" • #" + c.id + " — " + c.shape.count() + " blocks near "
+                int n = ++ord;
+                s.sendSuccess(() -> Component.literal(" • #" + n + " — " + c.shape.count() + " blocks near "
                         + c.shape.minX() + ", " + c.shape.minZ() + " (" + c.dimension + ")")
                         .withStyle(ChatFormatting.GRAY), false);
             }
@@ -138,9 +144,12 @@ public final class ShopGuardCommands {
             s.sendFailure(Component.literal("That claim isn't yours."));
             return 0;
         }
+        String label = c.owner.equals(sp.getUUID())
+                ? "your claim #" + ShopGuard.STORE.ordinalOf(c)
+                : c.ownerName + "'s claim";
         ShopGuard.STORE.remove(c.id);
         ClaimVisualizer.refresh(sp.level());
-        s.sendSuccess(() -> Component.literal("Removed claim #" + c.id + ".").withStyle(ChatFormatting.YELLOW), false);
+        s.sendSuccess(() -> Component.literal("Removed " + label + ".").withStyle(ChatFormatting.YELLOW), false);
         return 1;
     }
 
@@ -163,7 +172,7 @@ public final class ShopGuardCommands {
         ShopGuard.STORE.save();
         String name = target.getName().getString();
         s.sendSuccess(() -> Component.literal(name + (added ? " is now trusted" : " is no longer trusted")
-                + " on claim #" + c.id + ".").withStyle(added ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
+                + " on this claim.").withStyle(added ? ChatFormatting.GREEN : ChatFormatting.YELLOW), false);
         return 1;
     }
 

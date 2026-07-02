@@ -35,16 +35,29 @@ public final class ClaimTool {
 
     private static final Map<UUID, Boolean> CARVE_MODE = new HashMap<>();
     private static final Map<UUID, BlockPos> PENDING = new HashMap<>();
+    private static final Map<UUID, Long> LAST_ACTION = new HashMap<>();
 
     /** How far the tool can target a corner beyond vanilla reach (aim at the ground and click). */
     public static final double CORNER_RANGE = 64.0;
+
+    /**
+     * One physical right-click can reach us twice: vanilla sends a use-on-block packet AND, when the
+     * shovel has no vanilla use on that block, a follow-up use-item packet (which our raycast would
+     * treat as a second corner — instantly making a 1-block claim). Process at most one action per
+     * short window.
+     */
+    static boolean debounce(ServerPlayer sp, Map<UUID, Long> lastAction) {
+        long now = sp.level().getGameTime();
+        Long last = lastAction.put(sp.getUUID(), now);
+        return last != null && now - last < 2;
+    }
 
     public static void register() {
         // Right-click a block: set a corner (applies the current mode on the second corner).
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
             if (world.isClientSide() || !(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
             if (player.getItemInHand(hand).getItem() != Items.GOLDEN_SHOVEL) return InteractionResult.PASS;
-            handleCorner(sp, hit.getBlockPos());
+            if (!debounce(sp, LAST_ACTION)) handleCorner(sp, hit.getBlockPos());
             return InteractionResult.SUCCESS; // consume — also cancels vanilla path-making
         });
         // Right-click without a block in reach: vanilla treats any aim past ~4.5 blocks as an "air
@@ -53,11 +66,13 @@ public final class ClaimTool {
         UseItemCallback.EVENT.register((player, world, hand) -> {
             if (world.isClientSide() || !(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
             if (player.getItemInHand(hand).getItem() != Items.GOLDEN_SHOVEL) return InteractionResult.PASS;
-            HitResult hit = sp.pick(CORNER_RANGE, 1.0f, false);
-            if (hit.getType() == HitResult.Type.BLOCK) {
-                handleCorner(sp, ((BlockHitResult) hit).getBlockPos());
-            } else {
-                toggleMode(sp);
+            if (!debounce(sp, LAST_ACTION)) {
+                HitResult hit = sp.pick(CORNER_RANGE, 1.0f, false);
+                if (hit.getType() == HitResult.Type.BLOCK) {
+                    handleCorner(sp, ((BlockHitResult) hit).getBlockPos());
+                } else {
+                    toggleMode(sp);
+                }
             }
             return InteractionResult.SUCCESS;
         });
@@ -67,6 +82,7 @@ public final class ClaimTool {
     public static void clearPlayer(UUID uid) {
         CARVE_MODE.remove(uid);
         PENDING.remove(uid);
+        LAST_ACTION.remove(uid);
     }
 
     private static void toggleMode(ServerPlayer sp) {

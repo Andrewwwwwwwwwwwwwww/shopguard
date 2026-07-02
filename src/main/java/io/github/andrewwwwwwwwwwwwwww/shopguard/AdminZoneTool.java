@@ -31,6 +31,7 @@ public final class AdminZoneTool {
 
     private static final Map<UUID, Boolean> CARVE_MODE = new HashMap<>();
     private static final Map<UUID, BlockPos> PENDING = new HashMap<>();
+    private static final Map<UUID, Long> LAST_ACTION = new HashMap<>();
 
     public static void register() {
         UseBlockCallback.EVENT.register((player, world, hand, hit) -> {
@@ -38,7 +39,7 @@ public final class AdminZoneTool {
             if (player.getItemInHand(hand).getItem() != Items.GOLDEN_HOE || !ProtectionHandler.isOp(sp)) {
                 return InteractionResult.PASS;
             }
-            handleCorner(sp, hit.getBlockPos());
+            if (!ClaimTool.debounce(sp, LAST_ACTION)) handleCorner(sp, hit.getBlockPos());
             return InteractionResult.SUCCESS; // consume — don't till farmland with the admin tool
         });
         // Out-of-reach clicks: a block in sight sets that corner; a true sky-aim toggles the mode.
@@ -47,11 +48,13 @@ public final class AdminZoneTool {
             if (player.getItemInHand(hand).getItem() != Items.GOLDEN_HOE || !ProtectionHandler.isOp(sp)) {
                 return InteractionResult.PASS;
             }
-            HitResult hit = sp.pick(ClaimTool.CORNER_RANGE, 1.0f, false);
-            if (hit.getType() == HitResult.Type.BLOCK) {
-                handleCorner(sp, ((BlockHitResult) hit).getBlockPos());
-            } else {
-                toggleMode(sp);
+            if (!ClaimTool.debounce(sp, LAST_ACTION)) {
+                HitResult hit = sp.pick(ClaimTool.CORNER_RANGE, 1.0f, false);
+                if (hit.getType() == HitResult.Type.BLOCK) {
+                    handleCorner(sp, ((BlockHitResult) hit).getBlockPos());
+                } else {
+                    toggleMode(sp);
+                }
             }
             return InteractionResult.SUCCESS;
         });
@@ -61,6 +64,7 @@ public final class AdminZoneTool {
     public static void clearPlayer(UUID uid) {
         CARVE_MODE.remove(uid);
         PENDING.remove(uid);
+        LAST_ACTION.remove(uid);
     }
 
     private static void toggleMode(ServerPlayer sp) {

@@ -21,7 +21,8 @@ import java.util.UUID;
 public final class ClaimStore {
     private final Map<Long, Claim> claims = new HashMap<>();
     private final Map<Long, AdminZone> zones = new HashMap<>();
-    private long nextId = 1;
+    private long nextClaimId = 1;  // internal, global (never shown — players see per-owner ordinals)
+    private long nextZoneId = 1;   // zones number independently of claims
 
     // ---- claim lookup ----
 
@@ -37,7 +38,16 @@ public final class ClaimStore {
     public List<Claim> byOwner(UUID owner) {
         List<Claim> out = new ArrayList<>();
         for (Claim c : claims.values()) if (c.owner.equals(owner)) out.add(c);
+        out.sort((a, b) -> Long.compare(a.id, b.id));
         return out;
+    }
+
+    /** The player-facing number of a claim: its position among the owner's claims (oldest = #1). */
+    public int ordinalOf(Claim c) {
+        int n = 1;
+        for (Claim o : claims.values())
+            if (o.owner.equals(c.owner) && o.id < c.id) n++;
+        return n;
     }
 
     public int totalCellsOfOwner(UUID owner) {
@@ -98,7 +108,7 @@ public final class ClaimStore {
             result = absorb.get(0);
             for (int i = 1; i < absorb.size(); i++) zones.remove(absorb.get(i).id);
         } else {
-            result = new AdminZone(nextId++, dim);
+            result = new AdminZone(nextZoneId++, dim);
             zones.put(result.id, result);
         }
         result.shape = merged;
@@ -125,7 +135,7 @@ public final class ClaimStore {
     // ---- claim mutation ----
 
     public Claim newClaim(UUID owner, String ownerName, String dim) {
-        Claim c = new Claim(nextId++, owner, ownerName, dim);
+        Claim c = new Claim(nextClaimId++, owner, ownerName, dim);
         claims.put(c.id, c);
         return c;
     }
@@ -144,7 +154,8 @@ public final class ClaimStore {
             Path file = file();
             Files.createDirectories(file.getParent());
             CompoundTag root = new CompoundTag();
-            root.putLong("NextId", nextId);
+            root.putLong("NextClaimId", nextClaimId);
+            root.putLong("NextZoneId", nextZoneId);
             ListTag cl = new ListTag();
             for (Claim c : claims.values()) cl.add(cl.size(), c.save());
             root.put("Claims", cl);
@@ -160,13 +171,17 @@ public final class ClaimStore {
     public void load() {
         claims.clear();
         zones.clear();
-        nextId = 1;
+        nextClaimId = 1;
+        nextZoneId = 1;
         if (ShopGuard.server == null) return;
         Path file = file();
         if (!Files.exists(file)) return;
         try {
             CompoundTag root = NbtIo.readCompressed(file, NbtAccounter.unlimitedHeap());
-            nextId = root.getLongOr("NextId", 1);
+            // "NextId" is the legacy shared counter (pre-0.7.2) — seed both sequences from it.
+            long legacy = root.getLongOr("NextId", 1);
+            nextClaimId = root.getLongOr("NextClaimId", legacy);
+            nextZoneId = root.getLongOr("NextZoneId", legacy);
             ListTag cl = root.getListOrEmpty("Claims");
             for (int i = 0; i < cl.size(); i++) {
                 Claim c = Claim.load(cl.getCompoundOrEmpty(i));
