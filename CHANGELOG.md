@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.2
+- Admin-zone borders are now **dark red** (dust particles) instead of white — clearly distinct from
+  the green (yours) / orange (others') claim outlines.
+
 ## 0.6.1
 - **`/claim zones` now shows everything around you**, not just the admin zones: every claim's outline
   too — **green** for your claims, **orange** for other players' — so you can see exactly what land is

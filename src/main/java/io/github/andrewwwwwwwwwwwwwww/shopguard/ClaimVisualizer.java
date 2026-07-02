@@ -4,6 +4,7 @@ import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.AdminZone;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.Claim;
 import io.github.andrewwwwwwwwwwwwwww.shopguard.claim.ClaimShape;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -30,6 +31,9 @@ public final class ClaimVisualizer {
 
     /** Players who toggled `/claim zones` on — they see admin-zone borders regardless of held item. */
     private static final Set<UUID> ZONE_VIEWERS = Collections.synchronizedSet(new java.util.HashSet<>());
+
+    /** Admin-zone border colour: dark red dust, slightly enlarged so the border reads clearly. */
+    private static final DustParticleOptions ZONE_DUST = new DustParticleOptions(0x8B0000, 1.5f);
 
     public static boolean toggleZoneViewer(UUID player) {
         if (ZONE_VIEWERS.remove(player)) return false;
@@ -95,7 +99,7 @@ public final class ClaimVisualizer {
         }
     }
 
-    /** Outline admin zones (end-rod particles) for players who toggled `/claim zones` on. */
+    /** Outline admin zones (dark-red dust) for players who toggled `/claim zones` on. */
     private static void drawZones(ServerLevel level, String dim) {
         List<ServerPlayer> viewers = new ArrayList<>();
         for (ServerPlayer p : level.players()) if (ZONE_VIEWERS.contains(p.getUUID())) viewers.add(p);
@@ -123,7 +127,7 @@ public final class ClaimVisualizer {
     private static void spawnZoneDot(ServerLevel level, ServerPlayer p,
                                      double px, double pz, double py, double x, double z) {
         if (Math.abs(x - px) > RANGE || Math.abs(z - pz) > RANGE) return;
-        level.sendParticles(p, ParticleTypes.END_ROD, true, true, x, py, z, 1, 0.0, 0.0, 0.0, 0.0);
+        level.sendParticles(p, ZONE_DUST, true, true, x, py, z, 1, 0.0, 0.0, 0.0, 0.0);
     }
 
     private static boolean holdingTool(ServerPlayer p) {
