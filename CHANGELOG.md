@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.8.1
+- **Fixed: non-owners could place liquids in a claim.** Bucket use now checks where the liquid actually
+  lands, so pouring water/lava across a claim border is blocked (the old check only looked at the
+  clicked block).
+- **Fluids can't flow across a claim border** — water/lava spreading from outside stops at the edge
+  (and can't leak out of a claim either); flows normally within a claim or in unclaimed land.
+- **Admins have no claim-size limit** — ops are now exempt from the per-claim cap too (not just the
+  total), so they can claim as large an area as they want. `/claim` shows admins "no limit".
+
 ## 0.8.0
 - **Phase 3 grief protection.**
   - **Explosions can't destroy claimed blocks** — TNT, creepers, ghasts, end crystals, wither blasts,

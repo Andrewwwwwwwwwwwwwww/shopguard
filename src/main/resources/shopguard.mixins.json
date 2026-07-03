@@ -6,6 +6,7 @@
   "mixins": [
     "ExplosionProtectionMixin",
     "FireSpreadMixin",
+    "FluidFlowMixin",
     "PistonStructureResolverMixin"
   ],
   "injectors": {

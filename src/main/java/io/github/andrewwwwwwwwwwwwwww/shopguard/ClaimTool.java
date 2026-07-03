@@ -148,7 +148,7 @@ public final class ClaimTool {
             error(sp, "Claims can only be made inside a claim zone here.");
             return;
         }
-        if (merged.count() > ShopGuard.CONFIG.maxClaimArea) {
+        if (!op && merged.count() > ShopGuard.CONFIG.maxClaimArea) {
             error(sp, "Too big — max " + ShopGuard.CONFIG.maxClaimArea + " blocks per claim.");
             return;
         }

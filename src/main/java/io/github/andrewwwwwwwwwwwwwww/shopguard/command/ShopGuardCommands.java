@@ -107,8 +107,10 @@ public final class ShopGuardCommands {
                         .withStyle(ChatFormatting.GRAY), false);
             }
             int total = ShopGuard.STORE.totalCellsOfOwner(sp.getUUID());
-            s.sendSuccess(() -> Component.literal("Total claimed: " + total + " / "
-                    + ShopGuard.CONFIG.maxTotalPerPlayer + " blocks.").withStyle(ChatFormatting.GRAY), false);
+            String totalMsg = ProtectionHandler.isOp(sp)
+                    ? "Total claimed: " + total + " blocks (admin — no limit)."
+                    : "Total claimed: " + total + " / " + ShopGuard.CONFIG.maxTotalPerPlayer + " blocks.";
+            s.sendSuccess(() -> Component.literal(totalMsg).withStyle(ChatFormatting.GRAY), false);
         }
         return 1;
     }

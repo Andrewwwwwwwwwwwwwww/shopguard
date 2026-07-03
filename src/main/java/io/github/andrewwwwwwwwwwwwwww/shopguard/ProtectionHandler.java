@@ -17,7 +17,6 @@ import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.entity.decoration.painting.Painting;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BasePressurePlateBlock;
 import net.minecraft.world.level.block.ButtonBlock;
@@ -49,25 +48,38 @@ public final class ProtectionHandler {
             if (world.isClientSide() || !(player instanceof ServerPlayer sp)) return InteractionResult.PASS;
             BlockPos pos = hit.getBlockPos();
             Claim claim = claimAt(sp, pos);
-            if (claim == null || mayBuild(sp, claim)) return InteractionResult.PASS;
 
-            BlockState clicked = world.getBlockState(pos);
-            if (isMovementInteract(clicked)) return InteractionResult.PASS;             // doors/gates/trapdoors/plates
-            if (isRedstoneControl(clicked)) {                                           // buttons/levers
-                if (ShopGuard.CONFIG.allowRedstoneControls) return InteractionResult.PASS;
-                notifyBlocked(sp, claim);
-                return InteractionResult.FAIL;
+            // Interacting with a block that is itself inside a claim you can't build in.
+            if (claim != null && !mayBuild(sp, claim)) {
+                BlockState clicked = world.getBlockState(pos);
+                if (isMovementInteract(clicked)) return InteractionResult.PASS;         // doors/gates/trapdoors/plates
+                if (isRedstoneControl(clicked)) {                                       // buttons/levers
+                    if (ShopGuard.CONFIG.allowRedstoneControls) return InteractionResult.PASS;
+                    notifyBlocked(sp, claim);
+                    return InteractionResult.FAIL;
+                }
+                if (world.getBlockEntity(pos) instanceof Container) {                   // chests/barrels/furnaces/etc.
+                    notifyBlocked(sp, claim);
+                    return InteractionResult.FAIL;
+                }
+                if (!player.getItemInHand(hand).isEmpty()) {                            // placement / bucket / flint / etc.
+                    notifyBlocked(sp, claim);
+                    return InteractionResult.FAIL;
+                }
+                return InteractionResult.PASS;                                          // empty-hand click on a plain block
             }
-            if (world.getBlockEntity(pos) instanceof Container) {                       // chests/barrels/furnaces/etc.
-                notifyBlocked(sp, claim);
-                return InteractionResult.FAIL;
+
+            // Placing something (block, bucket) whose target lands in an adjacent claim — even when the
+            // clicked block is outside it (e.g. pouring a bucket across the border).
+            if (!player.getItemInHand(hand).isEmpty()) {
+                BlockPos placePos = pos.relative(hit.getDirection());
+                Claim placeClaim = claimAt(sp, placePos);
+                if (placeClaim != null && !mayBuild(sp, placeClaim)) {
+                    notifyBlocked(sp, placeClaim);
+                    return InteractionResult.FAIL;
+                }
             }
-            ItemStack held = player.getItemInHand(hand);
-            if (!held.isEmpty()) {                                                       // placement / bucket / flint / hoe / etc.
-                notifyBlocked(sp, claim);
-                return InteractionResult.FAIL;
-            }
-            return InteractionResult.PASS;                                               // empty-hand click on a plain block
+            return InteractionResult.PASS;
         });
 
         UseEntityCallback.EVENT.register((player, world, hand, entity, hit) -> guardEntity(player, world, entity));
