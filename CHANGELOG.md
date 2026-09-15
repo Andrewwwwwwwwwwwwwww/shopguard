@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.9.0
+- **Minecraft 26.3 build.** ShopGuard now ships for 26.3 (Fabric Loader 0.19.3 → 0.19.5, Fabric API
+  0.152.1+26.2 → 0.160.5+26.3). The 26.2 build carries on alongside it. No behaviour changes.
+
 ## 0.8.1
 - **Fixed: non-owners could place liquids in a claim.** Bucket use now checks where the liquid actually
   lands, so pouring water/lava across a claim border is blocked (the old check only looked at the
