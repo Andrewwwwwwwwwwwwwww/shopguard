@@ -1,6 +1,6 @@
 # ShopGuard
 
-A land-claim / grief-protection mod for Fabric (Minecraft 26.2). Fully server-side — vanilla
+A land-claim / grief-protection mod for Fabric (Minecraft 26.3). Fully server-side — vanilla
 clients are protected and see everything (outlines are particles, not client rendering).
 
 ## Claiming (golden shovel)
